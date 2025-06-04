@@ -56,7 +56,7 @@ void FileWorker::save_image(const std::string& outputFilepath, GrowingDequeMatri
   for (uint32_t i = 0; i < bmp_info_header.biHeight; ++i) {
     for (uint32_t j = 0; j < bmp_info_header.biWidth; ++j) {
       uint64_t ind = i * (((bmp_info_header.biWidth + 1) / 2 + 3) / 4 * 4) + j / 2;
-      pixels[ind] |= std::min(field[i][j].count, (uint16_t)4) << ((j + 1) % 2) * 4;
+      pixels[ind] |= std::min(field[j][i].count, (uint16_t)4) << ((j + 1) % 2) * 4;
     }
   }
 
