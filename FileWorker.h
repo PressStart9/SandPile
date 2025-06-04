@@ -4,12 +4,13 @@
 #include <fstream>
 #include <cstring>
 
+#include "GrowingDequeMatrix.hpp"
 #include "Cell.h"
 
 class FileWorker {
  public:
-  static void load_image(const std::string& inputFilepath, Cell* start);
-  static void save_image(const std::string& outputFilepath, Cell* start);
+  static void load_image(const std::string& inputFilepath, GrowingDequeMatrix<Cell>& field);
+  static void save_image(const std::string& outputFilepath, GrowingDequeMatrix<Cell>& field);
 
   constexpr static uint8_t kColors[20] = {0xFF, 0xFF, 0xFF, 0x00,  // white
                                           0x00, 0xFF, 0x00, 0x00,  // green
@@ -17,7 +18,7 @@ class FileWorker {
                                           0x80, 0x00, 0x80, 0x00,  // purple
                                           0x00, 0x00, 0x00, 0x00, };  // black
  private:
-  static uint64_t GetNumber(char* str, uint16_t* i);
+  static uint64_t get_tab_separated_number(char* str, size_t& i);
 
   static const uint16_t kMaxLineLength = 50;
 };

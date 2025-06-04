@@ -1,50 +1,79 @@
 #include <string>
 
+#include "Cell.h"
 #include "FileWorker.h"
+#include "GrowingDeque.hpp"
+#include "GrowingDequeMatrix.hpp"
 
-void Life(const std::string& outputFilepath, Cell* start, uint32_t iterations, uint32_t frequency) {
-  Cell* bg_buffer = new Cell(*start);
+
+bool ComputePending(GrowingDequeMatrix<Cell>& field) {
+  bool has_changes = false;
+  for (size_t i = 0; i < field.size_x(); ++i) {
+    for (size_t j = 0; j < field.size_y(); ++j) {
+      if (field[i][j].pending == 0) {
+        continue;
+      }
+      has_changes = true;
+      field[i][j].count = static_cast<int16_t>(field[i][j].count) + field[i][j].pending;
+      field[i][j].pending = 0;
+    }
+  }
+  return has_changes;
+}
+
+void Step(GrowingDequeMatrix<Cell>& field) {
+  size_t offset_x = 0;
+  size_t offset_y = 0;
+  for (size_t i = 0; i < field.size_x(); ++i) {
+    for (size_t j = 0; j < field.size_y(); ++j) {
+      size_t x = offset_x + i;
+      size_t y = offset_y + j;
+      if (field[x][y].count < 4) {
+        continue;
+      }
+
+      field[x][y].pending -= 4;
+      if (i == field.size_x() - 1) {
+        field.extend_x_back();
+      }
+      if (i == 0 && offset_x == 0) {
+        ++offset_x;
+        ++x;
+        field.extend_x_front();
+      }
+      if (j == field.size_y() - 1) {
+        field.extend_y_back();
+      }
+      if (j == 0 && offset_y == 0) {
+        ++offset_y;
+        ++y;
+        field.extend_y_front();
+      }
+
+      ++field[x][y + 1].pending;
+      ++field[x][y - 1].pending;
+      ++field[x + 1][y].pending;
+      ++field[x - 1][y].pending;
+    }
+  }
+}
+
+void Life(const std::string& outputFilepath, GrowingDequeMatrix<Cell>& field, uint32_t iterations, uint32_t frequency) {
   for (uint32_t i = 0; i < iterations; ++i) {
-    Cell* current_row = start;
-    while (current_row != nullptr) {
-      Cell* current = current_row;
-      while (current != nullptr) {
-        current->count += current->pending;
-        current->pending = 0;
-        current = current->right;
+    Step(field);
+    bool has_changes = ComputePending(field);
+
+    if (i % frequency == 0 || !has_changes) {
+      FileWorker::save_image(outputFilepath + std::to_string(i) + ".bmp", field);
+
+      // for (size_t a = 0; a < field.size_x(); ++a) {
+      //   for (size_t b = 0; b < field.size_y(); ++b) {
+      //     std::cout << field[a][b].count << ' ';
+      //   } std::cout << '\n';
+      // } std::cout << "\n\n";
+      if (!has_changes) {
+        break;
       }
-      current_row = current_row->down;
-    }
-
-    current_row = start;
-    while (current_row != nullptr) {
-      Cell* current = current_row;
-      while (current != nullptr) {
-        if (current->count < 4) {
-          current = current->right;
-          continue;
-        }
-
-        ++current->Down()->pending;
-        ++current->Left()->pending;
-        ++current->Right()->pending;
-        ++current->Up()->pending;
-
-        current->pending -= 4;
-        current = current->right;
-      }
-      current_row = current_row->down;
-    }
-
-    if (start->up != nullptr) {
-      start = start->up;
-    }
-    if (start->left != nullptr) {
-      start = start->left;
-    }
-
-    if (i % frequency == 0) {
-      FileWorker::save_image(outputFilepath + std::to_string(i) + ".bmp", start);
     }
   }
 }
@@ -97,14 +126,12 @@ int main(int argc, char* argv[]) {
 
   ParseCommandArguments(argc, argv, iterations, frequency, inputFilepath, outputFilepath);
 
-  Cell* start = new Cell();
-  start->x = 0;
-  start->y = 0;
+  GrowingDequeMatrix<Cell> field;
 
-  FileWorker::load_image(inputFilepath, start);
-  FileWorker::save_image(outputFilepath + "test.bmp", start);
+  FileWorker::load_image(inputFilepath, field);
+  FileWorker::save_image(outputFilepath + "test.bmp", field);
 
-  Life(outputFilepath, start, iterations, frequency);
+  Life(outputFilepath, field, iterations, frequency);
 
   return 0;
 }
