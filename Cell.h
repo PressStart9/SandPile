@@ -8,6 +8,7 @@ struct Cell {
     int x;
     int y;
     uint16_t count = 0;
+    uint16_t pending = 0;
 
     Cell* Up();
     Cell* Right();

@@ -2,73 +2,49 @@
 
 #include "FileWorker.h"
 
-struct Node {
-  Node* prev = nullptr;
-  Cell* cell = nullptr;
-};
-
 void Life(const std::string& outputFilepath, Cell* start, uint32_t iterations, uint32_t frequency) {
-  Node* update = new Node();
-  Cell* row = start;
-  Cell* el;
-  while (row != nullptr) {
-    el = row;
-    while (el != nullptr) {
-      if (el->count > 3) {
-        update = new Node { update, el };
-      }
-      el = el->right;
-    }
-    row = row->down;
-  }
-
-  Node* temp;
+  Cell* bg_buffer = new Cell(*start);
   for (uint32_t i = 0; i < iterations; ++i) {
-    if (update->prev == nullptr) {
-      break;
+    Cell* current_row = start;
+    while (current_row != nullptr) {
+      Cell* current = current_row;
+      while (current != nullptr) {
+        current->count += current->pending;
+        current->pending = 0;
+        current = current->right;
+      }
+      current_row = current_row->down;
     }
 
-    Node* new_update = new Node();
-    while (update->prev != nullptr) {
-      uint16_t n = update->cell->count / 4;
+    current_row = start;
+    while (current_row != nullptr) {
+      Cell* current = current_row;
+      while (current != nullptr) {
+        if (current->count < 4) {
+          current = current->right;
+          continue;
+        }
 
-      if (update->cell->Down()->count < 4 && 3 < update->cell->Down()->count + n) {
-        new_update = new Node { new_update, update->cell->Down() };
-      }
-      if (update->cell->Left()->count < 4 && 3 < update->cell->Left()->count + n) {
-        new_update = new Node { new_update, update->cell->Left() };
-      }
-      if (update->cell->Right()->count < 4 && 3 < update->cell->Right()->count + n) {
-        new_update = new Node { new_update, update->cell->Right() };
-      }
-      if (update->cell->Up()->count < 4 && 3 < update->cell->Up()->count + n) {
-        new_update = new Node { new_update, update->cell->Up() };
-      }
+        ++current->Down()->pending;
+        ++current->Left()->pending;
+        ++current->Right()->pending;
+        ++current->Up()->pending;
 
-      update->cell->Down()->count += n;
-      update->cell->Left()->count += n;
-      update->cell->Right()->count += n;
-      update->cell->Up()->count += n;
-
-      update->cell->count %= 4;
-
-      temp = update;
-      update = update->prev;
-      delete temp;
+        current->pending -= 4;
+        current = current->right;
+      }
+      current_row = current_row->down;
     }
-    temp = update;
-    update = new_update;
-    delete temp;
+
+    if (start->up != nullptr) {
+      start = start->up;
+    }
+    if (start->left != nullptr) {
+      start = start->left;
+    }
 
     if (i % frequency == 0) {
-      while (start->up != nullptr) {
-        start = start->up;
-      }
-      while (start->left != nullptr) {
-        start = start->left;
-      }
-
-      FileWorker::Writing(outputFilepath + std::to_string(i) + ".bmp", start);
+      FileWorker::save_image(outputFilepath + std::to_string(i) + ".bmp", start);
     }
   }
 }
@@ -98,11 +74,11 @@ void ParseCommandArguments(const int argc, char* argv[], uint32_t& iterations, u
       } else if (curr_arg.starts_with("--output=")) {
         outputFilepath = curr_arg.substr(curr_arg.find('=') + 1);
       } else {
-        RaiseError(ErrorCodes::NO_SUCH_ARGUMENT, curr_arg.c_str());
+        throw std::runtime_error("No such argument: " + curr_arg);
         return;
       }
     } else {
-      RaiseError(ErrorCodes::ARGUMENT_NOT_SPECIFIED, curr_arg.c_str());
+      throw std::runtime_error("Argument not specified: " + curr_arg);
       return;
     }
   }
@@ -110,7 +86,7 @@ void ParseCommandArguments(const int argc, char* argv[], uint32_t& iterations, u
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    RaiseError(ErrorCodes::FILE_NOT_SPECIFIED);
+    throw std::runtime_error("File not specified.");
     return 1;
   }
 
@@ -125,8 +101,8 @@ int main(int argc, char* argv[]) {
   start->x = 0;
   start->y = 0;
 
-  FileWorker::Reading(inputFilepath, start);
-  FileWorker::Writing(outputFilepath + "test.bmp", start);
+  FileWorker::load_image(inputFilepath, start);
+  FileWorker::save_image(outputFilepath + "test.bmp", start);
 
   Life(outputFilepath, start, iterations, frequency);
 

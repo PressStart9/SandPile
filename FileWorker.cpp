@@ -12,12 +12,10 @@ uint64_t FileWorker::GetNumber(char* str, uint16_t* i) {
   return std::stoull(&str[j]);
 }
 
-// Read each symbol in file
-void FileWorker::Reading(const std::string& inputFilepath, Cell* start) {
-  // Open file in "in" and "binary" mode
+void FileWorker::load_image(const std::string& inputFilepath, Cell* start) {
   std::ifstream file(inputFilepath, std::ifstream::binary);
-  if (!file) {
-    RaiseError(ErrorCodes::NO_SUCH_FILE, inputFilepath.c_str());
+  if (!file.is_open()) {
+    throw std::runtime_error("File not found: " + inputFilepath);
   }
   uint64_t px = 0;
   uint64_t py = 0;
@@ -56,7 +54,7 @@ void FileWorker::Reading(const std::string& inputFilepath, Cell* start) {
   file.close();
 }
 
-void FileWorker::Writing(const std::string& outputFilepath, Cell *start) {
+void FileWorker::save_image(const std::string& outputFilepath, Cell *start) {
   std::ofstream file(outputFilepath, std::ios::binary | std::ios::out);
 
   BITMAPFILEHEADER bmp_header;

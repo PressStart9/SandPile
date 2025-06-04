@@ -4,13 +4,12 @@
 #include <fstream>
 #include <cstring>
 
-#include "ErrorHandler.h"
 #include "Cell.h"
 
 class FileWorker {
  public:
-  static void Reading(const std::string& inputFilepath, Cell* start);
-  static void Writing(const std::string& outputFilepath, Cell* start);
+  static void load_image(const std::string& inputFilepath, Cell* start);
+  static void save_image(const std::string& outputFilepath, Cell* start);
 
   constexpr static uint8_t kColors[20] = {0xFF, 0xFF, 0xFF, 0x00,  // white
                                           0x00, 0xFF, 0x00, 0x00,  // green
@@ -30,7 +29,7 @@ struct BITMAPINFOHEADER {  // 56
   uint32_t biWidth;
   uint32_t biHeight;
   uint16_t biPlanes = 1;  // count of planes always set to 1
-  uint16_t biBitCount = 4;  // bit per pixel (from task)
+  uint16_t biBitCount = 4;  // bit per pixel
   uint32_t biCompression = 0;  // no compression
   uint32_t biSizeImage;
   uint32_t biXPelsPerMeter = 0;  // not defined
@@ -44,6 +43,6 @@ struct BITMAPFILEHEADER  {  // 14
   uint32_t bfSize;
   uint16_t bfReserved1 = 0;  // reserved
   uint16_t bfReserved2 = 0;  // reserved
-  uint32_t bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(FileWorker::kColors);  // o00set to pixels (with palette)
+  uint32_t bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + sizeof(FileWorker::kColors);  // offset to pixels (with palette)
 };
 #pragma pack(pop)
